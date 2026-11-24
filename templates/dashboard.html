@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — WAD Notifier{% endblock %}
+
+{% block content %}
+<section class="dashboard-header">
+    <div>
+        <h1>My Devices</h1>
+        <p class="muted">Signed in as <strong>{{ user.username }}</strong></p>
+    </div>
+    {% if telegram_linked %}
+        <div class="status-pill status-ok">✓ Telegram linked</div>
+    {% else %}
+        <div class="status-pill status-warn">⚠ Telegram not linked</div>
+    {% endif %}
+</section>
+
+{% if telegram_linked %}
+
+<div class="tg-panel tg-panel-live">
+    <p class="muted">Your Telegram account receives notifications for all devices below.</p>
+    <form method="post" action="{% url 'unlink_telegram' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary">Unlink Telegram</button>
+    </form>
+</div>
+
+{% else %}
+
+    {% if link_state == 'live' %}
+        {% if link_url %}
+        <div class="tg-panel tg-panel-live">
+            <div>
+                <p><strong>Open this link in Telegram</strong> to link your account:</p>
+                <p class="tg-url">
+                    <a href="{{ link_url }}" target="_blank" rel="noopener">{{ link_url }}</a>
+                </p>
+                <p class="muted">Expires in {{ link_expires_label }}.</p>
+            </div>
+            <div class="tg-actions">
+                {% if can_regenerate %}
+                    <form method="post" action="{% url 'create_telegram_link' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-secondary">Generate new link</button>
+                    </form>
+                {% else %}
+                    <p class="muted">New link available in {{ link_cooldown_label }}.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="tg-panel tg-panel-prompt">
+            <p class="muted">
+                ⚠ Link was created but the bot username is missing.
+                Add <code>TELEGRAM_BOT_USERNAME</code> to <code>.env</code> and <code>settings.py</code>.
+            </p>
+        </div>
+        {% endif %}
+    {% else %}
+    <div class="tg-panel tg-panel-prompt">
+        <div>
+            {% if link_state == 'expired' %}
+                <p class="muted">Previous link expired. Generate a fresh one.</p>
+            {% elif link_state == 'used' %}
+                <p class="muted">Previous link was already used.</p>
+            {% endif %}
+            <p>Link Telegram so device readings can reach you.</p>
+        </div>
+        <form method="post" action="{% url 'create_telegram_link' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">Generate Telegram link</button>
+        </form>
+    </div>
+    {% endif %}
+
+{% endif %}
+
+{% if devices %}
+    <div class="device-grid">
+        {% for d in devices %}
+        <article class="device-card">
+            <header class="device-card-header">
+                <span class="device-id">{{ d.device_id }}</span>
+                {% if d.pending_unclaim %}<span class="badge badge-warn">unclaim pending</span>
+                {% elif d.last_seen_at %}<span class="badge badge-ok">seen</span>
+                {% else %}<span class="badge">new</span>{% endif %}
+            </header>
+            <dl class="device-meta">
+                <div><dt>Claimed</dt><dd>{{ d.claimed_at|date:"Y-m-d H:i"|default:"—" }}</dd></div>
+                <div><dt>Firmware</dt><dd>{{ d.fw_version|default:"—" }}</dd></div>
+                <div><dt>Last seen</dt><dd>{% if d.last_seen_at %}{{ d.last_seen_at|timesince }} ago{% else %}never{% endif %}</dd></div>
+            </dl>
+            <form method="post" action="{% url 'unclaim_device' d.device_id %}" style="margin-top:12px">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary">Remove device</button>
+            </form>
+        </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <h2>No devices yet</h2>
+        <p class="muted">Open the bot, send <code>/linkdevice</code>, enter the 8-digit code.</p>
+    </div>
+{% endif %}
+{% endblock %}

@@ -16,7 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.contrib.auth import views as auth_views
+from devices import views as device_views
+from messaging import views as messaging_views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    path("", device_views.home, name="home"),
+    path("signup/", device_views.signup, name="signup"),
+    path("login/", auth_views.LoginView.as_view(template_name="login.html"), name="login"),
+    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("dashboard/", device_views.dashboard, name="dashboard"),
+    path("telegram/link/", messaging_views.create_telegram_link, name="create_telegram_link"),
+    path("telegram/unlink/", messaging_views.unlink_telegram, name="unlink_telegram"),
+    path("devices/<str:device_id>/unclaim/", device_views.unclaim_device, name="unclaim_device"),
 ]

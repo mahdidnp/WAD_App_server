@@ -2,12 +2,16 @@ import os
 
 from celery import Celery
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+os.environ.setdefault(
+    "DJANGO_SETTINGS_MODULE",
+    "WAD_App_Sever.settings",
+)
 
-app = Celery("yourapp")
+app = Celery("WAD_App_Sever")
 
-# Read CELERY_* settings from Django settings
-app.config_from_object("django.conf:settings", namespace="CELERY")
+app.config_from_object(
+    "django.conf:settings",
+    namespace="CELERY",
+)
 
-# Auto-discover tasks.py in every installed app
 app.autodiscover_tasks()

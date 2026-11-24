@@ -58,6 +58,14 @@ def _start(chat_id, account):
 
 def _link_token(chat_id, token):
     now = timezone.now()
+
+    # 1. If this Telegram is linked to ANY account, refuse — per your rule
+    already_linked = Account.objects.filter(telegram_chat_id=chat_id).first()
+    if already_linked:
+        tg.send_message(chat_id, "You have already linked your telegram.")
+        return
+
+    # 2. Validate the token
     with transaction.atomic():
         try:
             link = TelegramLinkToken.objects.select_for_update().get(token=token)
@@ -65,19 +73,17 @@ def _link_token(chat_id, token):
             tg.send_message(chat_id, "❌ Invalid link.")
             return
         if link.used_at or link.expires_at <= now:
-            tg.send_message(chat_id, "❌ Link expired.")
+            tg.send_message(chat_id, "❌ Link expired. Generate a new one from the dashboard.")
             return
-        conflict = Account.objects.filter(telegram_chat_id=chat_id).exclude(pk=link.account_id).first()
-        if conflict:
-            tg.send_message(chat_id, "⚠️ This Telegram is linked to another account.")
-            return
+
         link.account.telegram_chat_id = chat_id
         link.account.telegram_linked_at = now
         link.account.save(update_fields=["telegram_chat_id", "telegram_linked_at"])
+
         link.used_at = now
         link.save(update_fields=["used_at"])
-    tg.send_message(chat_id, "✅ Telegram linked. Tap Link Device.", reply_markup=ADD_KEYBOARD)
 
+    tg.send_message(chat_id, "✅ Telegram linked. Tap Link Device.", reply_markup=ADD_KEYBOARD)
 
 def _claim(account, chat_id, code):
     # Rate limit: 5 attempts / 10 min / chat

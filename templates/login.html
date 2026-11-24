@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Log in — WAD Notifier{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+    <h1>Welcome back</h1>
+    <p class="muted">No account yet? <a href="{% url 'signup' %}">Sign up</a>.</p>
+
+    <form method="post" class="form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <ul class="errors">
+                {% for err in form.non_field_errors %}<li>{{ err }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+        <div class="field">
+            <label for="{{ form.username.id_for_label }}">Username</label>
+            {{ form.username }}
+        </div>
+        <div class="field">
+            <label for="{{ form.password.id_for_label }}">Password</label>
+            {{ form.password }}
+        </div>
+        <button type="submit" class="btn-primary btn-block">Log in</button>
+    </form>
+</section>
+{% endblock %}

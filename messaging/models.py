@@ -23,6 +23,20 @@ class TelegramLinkToken(models.Model):
     def __str__(self):
         return self.token
 
+class TelegramLinkToken(models.Model):
+    token = models.CharField(max_length=64, unique=True)
+    account = models.OneToOneField(          # ← was ForeignKey
+        "devices.Account", on_delete=models.CASCADE, related_name="link_token"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "telegram_link_tokens"
+
+    def __str__(self):
+        return self.token
 
 class NotificationLog(models.Model):
     """
